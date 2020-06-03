@@ -1,7 +1,7 @@
 /*
- * Allwinner H3 System on Chip emulation
+ * Allwinner A64 System on Chip emulation
  *
- * Copyright (C) 2019 Niek Linnenbank <nieklinnenbank@gmail.com>
+ * Copyright (C) 2020 Abdel Benamrouche <abdel@unxp.fr>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
  */
 
 /*
- * The Allwinner H3 is a System on Chip containing four ARM Cortex-A7
+ * The Allwinner H3 is a System on Chip containing four ARM Cortex A7
  * processor cores. Features and specifications include DDR2/DDR3 memory,
  * SD/MMC storage cards, 10/100/1000Mbit Ethernet, USB 2.0, HDMI and
  * various I/O modules.
@@ -32,21 +32,13 @@
  *   https://linux-sunxi.org/H3
  */
 
-#ifndef HW_ARM_ALLWINNER_H3_H
-#define HW_ARM_ALLWINNER_H3_H
+#ifndef HW_ARM_ALLWINNER_A64_H
+#define HW_ARM_ALLWINNER_A64_H
 
 #include "qom/object.h"
 #include "hw/arm/boot.h"
-#include "hw/timer/allwinner-a10-pit.h"
-#include "hw/intc/arm_gic.h"
-#include "hw/misc/allwinner-h3-ccu.h"
-#include "hw/misc/allwinner-cpucfg.h"
-#include "hw/misc/allwinner-h3-dramc.h"
-#include "hw/misc/allwinner-h3-sysctrl.h"
-#include "hw/misc/allwinner-sid.h"
-#include "hw/sd/allwinner-sdhost.h"
-#include "hw/net/allwinner-sun8i-emac.h"
-#include "hw/rtc/allwinner-rtc.h"
+#include "hw/arm/allwinner-h3.h"
+#include "hw/misc/allwinner-rsb.h"
 #include "target/arm/cpu.h"
 #include "sysemu/block-backend.h"
 
@@ -61,53 +53,26 @@
  * @see AwH3State
  */
 enum {
-    AW_H3_DEV_SRAM_A1,
-    AW_H3_DEV_SRAM_A2,
-    AW_H3_DEV_SRAM_C,
-    AW_H3_DEV_SYSCTRL,
-    AW_H3_DEV_MMC0,
-    AW_H3_DEV_SID,
-    AW_H3_DEV_EHCI0,
-    AW_H3_DEV_OHCI0,
-    AW_H3_DEV_EHCI1,
-    AW_H3_DEV_OHCI1,
-    AW_H3_DEV_EHCI2,
-    AW_H3_DEV_OHCI2,
-    AW_H3_DEV_EHCI3,
-    AW_H3_DEV_OHCI3,
-    AW_H3_DEV_CCU,
-    AW_H3_DEV_PIT,
-    AW_H3_DEV_UART0,
-    AW_H3_DEV_UART1,
-    AW_H3_DEV_UART2,
-    AW_H3_DEV_UART3,
-    AW_H3_DEV_EMAC,
-    AW_H3_DEV_DRAMCOM,
-    AW_H3_DEV_DRAMCTL,
-    AW_H3_DEV_DRAMPHY,
-    AW_H3_DEV_GIC_DIST,
-    AW_H3_DEV_GIC_CPU,
-    AW_H3_DEV_GIC_HYP,
-    AW_H3_DEV_GIC_VCPU,
-    AW_H3_DEV_RTC,
-    AW_H3_DEV_CPUCFG,
-    AW_H3_DEV_SDRAM,
-    AW_H3_DEV_COUNT
+    AW_A64_SRAM_A1 = AW_H3_SRAM_A1,
+    AW_A64_SRAM_A2 = AW_H3_SRAM_A2,
+    AW_A64_SRAM_C = AW_H3_SRAM_C,
+    AW_A64_UART4 = AW_H3_COUNT,
+    AW_A64_RSB
 };
 
-/** Total number of CPU cores in the H3 SoC */
-#define AW_H3_NUM_CPUS      (4)
+/** Total number of CPU cores in the A64 SoC */
+#define AW_A64_NUM_CPUS      (4)
 
 /**
  * Allwinner H3 object model
  * @{
  */
 
-/** Object type for the Allwinner H3 SoC */
-#define TYPE_AW_H3 "allwinner-h3"
+/** Object type for the Allwinner A64 SoC */
+#define TYPE_AW_A64 "allwinner-a64"
 
-/** Convert input object to Allwinner H3 state object */
-OBJECT_DECLARE_SIMPLE_TYPE(AwH3State, AW_H3)
+/** Convert input object to Allwinner A64 state object */
+#define AW_A64(obj) OBJECT_CHECK(AwA64State, (obj), TYPE_AW_A64)
 
 /** @} */
 
@@ -117,28 +82,13 @@ OBJECT_DECLARE_SIMPLE_TYPE(AwH3State, AW_H3)
  * This struct contains the state of all the devices
  * which are currently emulated by the H3 SoC code.
  */
-struct AwH3State {
-    /*< private >*/
-    DeviceState parent_obj;
-    /*< public >*/
+typedef struct AwA64State {
+	/* inherit devices from h3 objects */
+	AwH3State h3;
 
-    ARMCPU cpus[AW_H3_NUM_CPUS];
-    const hwaddr *memmap;
-    const hwaddr *h3_memmap;
-    AwA10PITState timer;
-    AwH3ClockCtlState ccu;
-    AwCpuCfgState cpucfg;
-    AwH3DramCtlState dramc;
-    AwH3SysCtrlState sysctrl;
-    AwSidState sid;
-    AwSdHostState mmc0;
-    AwSun8iEmacState emac;
-    AwRtcState rtc;
-    GICState gic;
-    MemoryRegion sram_a1;
-    MemoryRegion sram_a2;
-    MemoryRegion sram_c;
-};
+	const hwaddr *a64_memmap;
+    AwRSBState rsb;
+} AwA64State;
 
 /**
  * Emulate Boot ROM firmware setup functionality.
@@ -158,10 +108,6 @@ struct AwH3State {
  * @s: Allwinner H3 state object pointer
  * @blk: Block backend device object pointer
  */
-void allwinner_h3_bootrom_setup(AwH3State *s, BlockBackend *blk);
+void allwinner_a64_bootrom_setup(AwA64State *s, BlockBackend *blk);
 
-/** Functions used on other SOC similar to H3. */
-void allwinner_h3_common_init(Object *obj, AwH3State *s, const char *typename);
-void allwinner_h3_common_realize(DeviceState *dev, AwH3State *s, Error **errp);
-
-#endif /* HW_ARM_ALLWINNER_H3_H */
+#endif /* HW_ARM_ALLWINNER_A64_H */
